@@ -31,9 +31,15 @@ const EMPLOYMENT_OPTIONS = [
   { value: 'retired', label: 'Retired' },
 ];
 
+const INPUT = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all';
+
 export default function IntakePage() {
   const router = useRouter();
   const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
     nationality: '',
     city: '',
     destination: '',
@@ -58,8 +64,8 @@ export default function IntakePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nationality || !form.city || !form.destination || !form.travelDates) {
-      setError('Please fill in all fields.');
+    if (!form.firstName || !form.lastName || !form.email || !form.nationality || !form.city || !form.destination || !form.travelDates) {
+      setError('Please fill in all required fields.');
       return;
     }
     setLoading(true);
@@ -89,8 +95,6 @@ export default function IntakePage() {
           <p className="text-white/50 text-lg max-w-md">
             5 agents. One visa. From strategy to appointment booking — fully automated.
           </p>
-
-          {/* Stats */}
           <div className="flex items-center justify-center gap-8 mt-8">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-400">$49</div>
@@ -115,26 +119,42 @@ export default function IntakePage() {
             <span className="text-xs text-white/25 font-semibold tracking-wider">OR FILL MANUALLY</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
+
+          {/* Personal info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">FIRST NAME</label>
+              <input type="text" placeholder="Danara" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">LAST NAME</label>
+              <input type="text" placeholder="Buvaeva" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={INPUT} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">EMAIL</label>
+              <input type="email" placeholder="you@email.com" value={form.email} onChange={e => set('email', e.target.value)} className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">PHONE <span className="text-white/20 font-normal normal-case tracking-normal">optional</span></label>
+              <input type="tel" placeholder="+1 415 555 0100" value={form.phone} onChange={e => set('phone', e.target.value)} className={INPUT} />
+            </div>
+          </div>
+
+          {/* Travel info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">PASSPORT NATIONALITY</label>
-              <select
-                value={form.nationality}
-                onChange={e => set('nationality', e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all"
-              >
+              <select value={form.nationality} onChange={e => set('nationality', e.target.value)} className={INPUT}>
                 <option value="" className="bg-[#0a0a0f]">Select nationality</option>
                 {NATIONALITIES.map(n => <option key={n} value={n} className="bg-[#0a0a0f]">{n}</option>)}
               </select>
             </div>
-
             <div>
               <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">CURRENT CITY</label>
-              <select
-                value={form.city}
-                onChange={e => set('city', e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all"
-              >
+              <select value={form.city} onChange={e => set('city', e.target.value)} className={INPUT}>
                 <option value="" className="bg-[#0a0a0f]">Select city</option>
                 {CITIES.map(c => <option key={c} value={c} className="bg-[#0a0a0f]">{c}</option>)}
               </select>
@@ -143,11 +163,7 @@ export default function IntakePage() {
 
           <div>
             <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">DESTINATION COUNTRY</label>
-            <select
-              value={form.destination}
-              onChange={e => set('destination', e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all"
-            >
+            <select value={form.destination} onChange={e => set('destination', e.target.value)} className={INPUT}>
               <option value="" className="bg-[#0a0a0f]">Select destination</option>
               {DESTINATIONS.map(d => <option key={d} value={d} className="bg-[#0a0a0f]">{d}</option>)}
             </select>
@@ -160,7 +176,7 @@ export default function IntakePage() {
               placeholder="e.g. June 15 – June 28, 2026"
               value={form.travelDates}
               onChange={e => set('travelDates', e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/8 transition-all"
+              className={INPUT}
             />
           </div>
 

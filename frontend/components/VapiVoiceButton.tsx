@@ -15,27 +15,89 @@ interface Props {
 
 type Status = 'idle' | 'connecting' | 'active' | 'processing' | 'done' | 'error';
 
-const NATIONALITIES = ['american', 'indian', 'chinese', 'brazilian', 'mexican', 'russian', 'ukrainian', 'filipino', 'vietnamese', 'nigerian', 'egyptian', 'pakistani', 'bangladeshi', 'ethiopian', 'indonesian', 'turkish', 'iranian', 'british', 'canadian', 'australian', 'german', 'french', 'italian', 'spanish', 'japanese', 'south korean', 'thai', 'malaysian', 'colombian', 'kazakhstani'];
-const CITIES = ['san francisco', 'new york', 'los angeles', 'chicago', 'houston', 'seattle', 'boston', 'washington dc', 'miami', 'austin'];
-const DESTINATIONS = ['italy', 'france', 'germany', 'spain', 'netherlands', 'greece', 'portugal', 'switzerland', 'austria', 'belgium', 'czech republic', 'poland', 'croatia', 'sweden', 'norway', 'denmark', 'finland'];
+// Aliases to handle natural speech variants
+const NATIONALITY_MAP: Record<string, string> = {
+  'kazakh': 'Kazakhstani', 'kazakhstani': 'Kazakhstani', 'kazakhstan': 'Kazakhstani',
+  'american': 'American', 'us citizen': 'American', 'united states': 'American',
+  'indian': 'Indian', 'india': 'Indian',
+  'chinese': 'Chinese', 'china': 'Chinese',
+  'brazilian': 'Brazilian', 'brazil': 'Brazilian',
+  'mexican': 'Mexican', 'mexico': 'Mexican',
+  'russian': 'Russian', 'russia': 'Russian',
+  'ukrainian': 'Ukrainian', 'ukraine': 'Ukrainian',
+  'filipino': 'Filipino', 'philippines': 'Filipino',
+  'vietnamese': 'Vietnamese', 'vietnam': 'Vietnamese',
+  'nigerian': 'Nigerian', 'nigeria': 'Nigerian',
+  'egyptian': 'Egyptian', 'egypt': 'Egyptian',
+  'pakistani': 'Pakistani', 'pakistan': 'Pakistani',
+  'bangladeshi': 'Bangladeshi', 'bangladesh': 'Bangladeshi',
+  'ethiopian': 'Ethiopian', 'ethiopia': 'Ethiopian',
+  'indonesian': 'Indonesian', 'indonesia': 'Indonesian',
+  'turkish': 'Turkish', 'turkey': 'Turkish',
+  'iranian': 'Iranian', 'iran': 'Iranian',
+  'british': 'British', 'uk': 'British', 'united kingdom': 'British',
+  'canadian': 'Canadian', 'canada': 'Canadian',
+  'australian': 'Australian', 'australia': 'Australian',
+  'german': 'German', 'germany': 'German',
+  'french': 'French', 'france': 'French',
+  'italian': 'Italian', 'italy': 'Italian',
+  'spanish': 'Spanish', 'spain': 'Spanish',
+  'japanese': 'Japanese', 'japan': 'Japanese',
+  'south korean': 'South Korean', 'korean': 'South Korean', 'south korea': 'South Korean',
+  'thai': 'Thai', 'thailand': 'Thai',
+  'malaysian': 'Malaysian', 'malaysia': 'Malaysian',
+  'colombian': 'Colombian', 'colombia': 'Colombian',
+};
 
-function capitalize(s: string) {
-  return s.split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+const CITY_MAP: Record<string, string> = {
+  'san francisco': 'San Francisco', 'sf': 'San Francisco', 'san fran': 'San Francisco',
+  'new york': 'New York', 'nyc': 'New York', 'new york city': 'New York',
+  'los angeles': 'Los Angeles', 'la': 'Los Angeles',
+  'chicago': 'Chicago',
+  'houston': 'Houston',
+  'seattle': 'Seattle',
+  'boston': 'Boston',
+  'washington dc': 'Washington DC', 'washington': 'Washington DC', 'dc': 'Washington DC',
+  'miami': 'Miami',
+  'austin': 'Austin',
+};
+
+const DESTINATION_MAP: Record<string, string> = {
+  'italy': 'Italy', 'italian': 'Italy', 'rome': 'Italy', 'milan': 'Italy',
+  'france': 'France', 'french': 'France', 'paris': 'France',
+  'germany': 'Germany', 'german': 'Germany', 'berlin': 'Germany',
+  'spain': 'Spain', 'spanish': 'Spain', 'madrid': 'Spain', 'barcelona': 'Spain',
+  'netherlands': 'Netherlands', 'dutch': 'Netherlands', 'amsterdam': 'Netherlands', 'holland': 'Netherlands',
+  'greece': 'Greece', 'greek': 'Greece', 'athens': 'Greece',
+  'portugal': 'Portugal', 'lisbon': 'Portugal',
+  'switzerland': 'Switzerland', 'swiss': 'Switzerland', 'zurich': 'Switzerland',
+  'austria': 'Austria', 'vienna': 'Austria',
+  'belgium': 'Belgium', 'brussels': 'Belgium',
+  'czech republic': 'Czech Republic', 'czech': 'Czech Republic', 'prague': 'Czech Republic',
+  'poland': 'Poland', 'warsaw': 'Poland',
+  'croatia': 'Croatia', 'dubrovnik': 'Croatia',
+  'sweden': 'Sweden', 'stockholm': 'Sweden',
+  'norway': 'Norway', 'oslo': 'Norway',
+  'denmark': 'Denmark', 'copenhagen': 'Denmark',
+  'finland': 'Finland', 'helsinki': 'Finland',
+};
+
+function matchMap(text: string, map: Record<string, string>): string | undefined {
+  // Sort by key length descending so longer phrases match first
+  const keys = Object.keys(map).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    if (text.includes(key)) return map[key];
+  }
+  return undefined;
 }
 
 function extractFromTranscript(lines: string[]): ExtractedData {
   const text = lines.join(' ').toLowerCase();
   const data: ExtractedData = {};
 
-  for (const n of NATIONALITIES) {
-    if (text.includes(n)) { data.nationality = capitalize(n); break; }
-  }
-  for (const c of CITIES) {
-    if (text.includes(c)) { data.city = capitalize(c); break; }
-  }
-  for (const d of DESTINATIONS) {
-    if (text.includes(d)) { data.destination = capitalize(d); break; }
-  }
+  data.nationality = matchMap(text, NATIONALITY_MAP);
+  data.city = matchMap(text, CITY_MAP);
+  data.destination = matchMap(text, DESTINATION_MAP);
 
   if (text.includes('self-employed') || text.includes('self employed') || text.includes('freelan')) {
     data.employmentStatus = 'self_employed';
@@ -47,14 +109,20 @@ function extractFromTranscript(lines: string[]): ExtractedData {
     data.employmentStatus = 'employed';
   }
 
-  const monthNames = 'january|february|march|april|may|june|july|august|september|october|november|december';
-  const dateRe = new RegExp(
-    `(${monthNames})\\s+\\d{1,2}(?:[\\s\\S]*?(?:to|through|–|-)\\s*(?:${monthNames})?\\s*\\d{1,2})?[,\\s]+\\d{4}`,
-    'i'
-  );
-  const dateMatch = text.match(dateRe);
-  if (dateMatch) {
-    data.travelDates = dateMatch[0].replace(/\b\w/g, c => c.toUpperCase()).trim();
+  // Match dates: "June 15 to June 22" / "June 15-22" / "15th to 22nd of June" / "June 15 through June 28, 2026"
+  const months = 'january|february|march|april|may|june|july|august|september|october|november|december';
+  const patterns = [
+    new RegExp(`(${months})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:\\s+(?:to|through|until|-)\\s+(?:${months})?\\s*\\d{1,2}(?:st|nd|rd|th)?)?(?:[,\\s]+\\d{4})?`, 'i'),
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m) {
+      // Append year if missing
+      let dateStr = m[0].trim().replace(/\b\w/g, c => c.toUpperCase());
+      if (!/\d{4}/.test(dateStr)) dateStr += ', 2026';
+      data.travelDates = dateStr;
+      break;
+    }
   }
 
   return data;
@@ -72,6 +140,14 @@ export default function VapiVoiceButton({ onFilled }: Props) {
     setLines([...linesRef.current]);
   };
 
+  const finishWithData = useCallback((data: ExtractedData) => {
+    setStatus('processing');
+    setTimeout(() => {
+      onFilled(data);
+      setStatus('done');
+    }, 400);
+  }, [onFilled]);
+
   const startCall = useCallback(async () => {
     setStatus('connecting');
     linesRef.current = [];
@@ -83,12 +159,11 @@ export default function VapiVoiceButton({ onFilled }: Props) {
       const { publicKey, assistant } = await configRes.json();
 
       if (!publicKey) {
-        setErrMsg('Vapi not configured — add VAPI_PUBLIC_KEY to .env and restart backend');
+        setErrMsg('Vapi not configured — add VAPI_PUBLIC_KEY to Vercel env vars');
         setStatus('error');
         return;
       }
 
-      // Dynamic import avoids SSR crash
       const { default: Vapi } = await import('@vapi-ai/web');
       const instance = new Vapi(publicKey);
       vapiRef.current = instance;
@@ -96,18 +171,31 @@ export default function VapiVoiceButton({ onFilled }: Props) {
       instance.on('call-start', () => setStatus('active'));
 
       instance.on('message', (msg: any) => {
+        // Collect transcript for fallback extraction
         if (msg.type === 'transcript' && msg.transcriptType === 'final') {
           appendLine(`${msg.role === 'assistant' ? 'AI' : 'You'}: ${msg.transcript}`);
         }
+
+        // Primary: tool call with structured data — reliable, no regex needed
+        if (msg.type === 'tool-calls') {
+          const call = msg.toolCallList?.[0] ?? msg.toolCalls?.[0];
+          if (call?.function?.name === 'submit_form_data') {
+            try {
+              const args = typeof call.function.arguments === 'string'
+                ? JSON.parse(call.function.arguments)
+                : call.function.arguments;
+              instance.stop();
+              finishWithData(args);
+            } catch {}
+          }
+        }
       });
 
+      // Fallback: extract from transcript when call ends naturally
       instance.on('call-end', () => {
-        setStatus('processing');
-        setTimeout(() => {
-          const extracted = extractFromTranscript(linesRef.current);
-          onFilled(extracted);
-          setStatus('done');
-        }, 600);
+        if (status === 'done' || status === 'processing') return;
+        const extracted = extractFromTranscript(linesRef.current);
+        finishWithData(extracted);
       });
 
       instance.on('error', (err: any) => {
@@ -120,7 +208,7 @@ export default function VapiVoiceButton({ onFilled }: Props) {
       setErrMsg(err?.message || 'Failed to load voice SDK');
       setStatus('error');
     }
-  }, [onFilled]);
+  }, [onFilled, finishWithData, status]);
 
   const stopCall = useCallback(() => {
     vapiRef.current?.stop();
@@ -152,13 +240,11 @@ export default function VapiVoiceButton({ onFilled }: Props) {
         {status === 'idle' && <><MicIcon /><span>Talk to VisaPath instead</span></>}
         {status === 'connecting' && <><SpinnerIcon /><span>Connecting voice agent…</span></>}
         {status === 'active' && <><PulseIcon /><span>Speaking — tap to end call</span></>}
-        {status === 'processing' && <><SpinnerIcon /><span>Processing your answers…</span></>}
+        {status === 'processing' && <><SpinnerIcon /><span>Filling your form…</span></>}
         {status === 'error' && <><MicIcon /><span>Retry voice input</span></>}
       </button>
 
-      {errMsg && (
-        <p className="text-xs text-red-400/70 text-center">{errMsg}</p>
-      )}
+      {errMsg && <p className="text-xs text-red-400/70 text-center">{errMsg}</p>}
 
       {status === 'active' && lines.length > 0 && (
         <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 max-h-20 overflow-y-auto space-y-0.5">
@@ -178,7 +264,6 @@ function MicIcon() {
     </svg>
   );
 }
-
 function CheckIcon() {
   return (
     <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +271,6 @@ function CheckIcon() {
     </svg>
   );
 }
-
 function SpinnerIcon() {
   return (
     <svg className="w-4 h-4 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
@@ -195,7 +279,6 @@ function SpinnerIcon() {
     </svg>
   );
 }
-
 function PulseIcon() {
   return (
     <span className="relative flex h-3 w-3 flex-shrink-0">

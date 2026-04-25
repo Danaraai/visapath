@@ -51,10 +51,30 @@ function getWebAssistantConfig() {
 1. Passport nationality — one of: American, Indian, Chinese, Brazilian, Mexican, Russian, Ukrainian, Filipino, Vietnamese, Nigerian, Egyptian, Pakistani, Bangladeshi, Ethiopian, Indonesian, Turkish, Iranian, British, Canadian, Australian, German, French, Italian, Spanish, Japanese, South Korean, Thai, Malaysian, Colombian, Kazakhstani
 2. Current US city — one of: San Francisco, New York, Los Angeles, Chicago, Houston, Seattle, Boston, Washington DC, Miami, Austin
 3. Schengen destination — one of: Italy, France, Germany, Spain, Netherlands, Greece, Portugal, Switzerland, Austria, Belgium, Czech Republic, Poland, Croatia, Sweden, Norway, Denmark, Finland
-4. Travel dates (e.g. "June 15 to June 28, 2026")
+4. Travel dates — ask for start and end date, e.g. "June 15 to June 22, 2026"
 5. Employment status — one of: employed, self_employed, student, retired
 
-Ask one question at a time. Keep each response to 1–2 sentences. Once you have all 5, say exactly: "Perfect! I've collected all your details. Filling in your application now!"`,
+Ask one question at a time. Keep responses to 1 sentence. Once you have all 5, call the submit_form_data function immediately with the exact values.`,
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'submit_form_data',
+            description: 'Submit the collected visa application data to fill the form',
+            parameters: {
+              type: 'object',
+              properties: {
+                nationality: { type: 'string', description: 'Passport nationality, e.g. Kazakhstani' },
+                city: { type: 'string', description: 'Current US city, e.g. San Francisco' },
+                destination: { type: 'string', description: 'Schengen destination country, e.g. Italy' },
+                travelDates: { type: 'string', description: 'Travel dates as a string, e.g. June 15 to June 22, 2026' },
+                employmentStatus: { type: 'string', enum: ['employed', 'self_employed', 'student', 'retired'] },
+              },
+              required: ['nationality', 'city', 'destination', 'travelDates', 'employmentStatus'],
+            },
+          },
+        },
+      ],
     },
     voice: { provider: 'openai', voiceId: 'nova' },
     endCallMessage: "Your form is ready — let's find your visa path!",
