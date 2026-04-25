@@ -1,49 +1,15 @@
-// In-memory fallback for demo — use REDIS_URL (Upstash or any Redis) in Vercel env vars for persistence
+// Pure in-memory store — no native modules, safe for Vercel serverless
+// Vercel reuses warm instances within a demo session so state persists
 const memStore = new Map();
 
-let client;
-function getRedis() {
-  if (!client && process.env.REDIS_URL && !process.env.REDIS_URL.includes('localhost')) {
-    try {
-      const Redis = require('ioredis');
-      client = new Redis(process.env.REDIS_URL, {
-        lazyConnect: true,
-        retryStrategy: () => null,
-        tls: process.env.REDIS_URL.startsWith('rediss://') ? {} : undefined,
-      });
-      client.on('error', () => {});
-    } catch { client = null; }
-  }
-  return client;
-}
-
 async function get(key) {
-  try {
-    const r = getRedis();
-    if (r) {
-      const val = await r.get(key);
-      return val ? JSON.parse(val) : null;
-    }
-  } catch {}
   return memStore.get(key) ?? null;
 }
 
-async function set(key, value, ttlSeconds = 3600) {
-  try {
-    const r = getRedis();
-    if (r) {
-      await r.setex(key, ttlSeconds, JSON.stringify(value));
-      return;
-    }
-  } catch {}
+async function set(key, value) {
   memStore.set(key, value);
 }
 
-async function publish(channel, message) {
-  try {
-    const r = getRedis();
-    if (r) await r.publish(channel, JSON.stringify(message));
-  } catch {}
-}
+async function publish() {}
 
 module.exports = { get, set, publish };
