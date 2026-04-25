@@ -127,7 +127,7 @@ function ShowUpPage() {
           onClick={downloadAll}
           className="w-full py-4 bg-blue-500 hover:bg-blue-400 rounded-xl font-bold text-sm transition-all"
         >
-          Download All Documents as ZIP
+          Download All Documents (.txt)
         </button>
 
         <div className="text-center text-xs text-white/20 mt-4">

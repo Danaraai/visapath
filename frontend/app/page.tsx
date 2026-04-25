@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Pipeline from '@/components/Pipeline';
+import VapiVoiceButton, { type ExtractedData } from '@/components/VapiVoiceButton';
 import { createSession } from '@/lib/api';
 
 const NATIONALITIES = [
@@ -43,6 +44,17 @@ export default function IntakePage() {
   const [error, setError] = useState('');
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleVoiceFilled = (data: ExtractedData) => {
+    setForm(f => ({
+      ...f,
+      ...(data.nationality ? { nationality: data.nationality } : {}),
+      ...(data.city ? { city: data.city } : {}),
+      ...(data.destination ? { destination: data.destination } : {}),
+      ...(data.travelDates ? { travelDates: data.travelDates } : {}),
+      ...(data.employmentStatus ? { employmentStatus: data.employmentStatus } : {}),
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +109,12 @@ export default function IntakePage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4">
+          <VapiVoiceButton onFilled={handleVoiceFilled} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/25 font-semibold tracking-wider">OR FILL MANUALLY</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-white/40 font-semibold tracking-wider mb-2">PASSPORT NATIONALITY</label>
