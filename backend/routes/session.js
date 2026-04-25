@@ -6,6 +6,8 @@ const applicationAgent = require('../agents/application');
 const documentAgent = require('../agents/document');
 const appointmentAgent = require('../agents/appointment');
 
+const vapi = require('../services/vapi');
+
 const router = express.Router();
 
 // POST /api/session — create session from intake form
@@ -132,6 +134,57 @@ router.post('/:id/checklist/:itemId', async (req, res) => {
   const result = await documentAgent.updateItem(id, itemId, status);
   if (!result) return res.status(404).json({ error: 'Checklist not found' });
   res.json(result);
+});
+
+// POST /api/session/:id/notify — save phone number for slot notification
+router.post('/:id/notify', async (req, res) => {
+  const { id } = req.params;
+  const { phoneNumber } = req.body;
+  if (!phoneNumber) return res.status(400).json({ error: 'phoneNumber required' });
+
+  const profile = await redis.get(`session:${id}:profile`);
+  if (!profile) return res.status(404).json({ error: 'Session not found' });
+
+  await redis.set(`session:${id}:notify`, { phoneNumber }, 86400);
+  res.json({ status: 'saved', phoneNumber });
+});
+
+// POST /api/session/:id/simulate-slot — demo: mark slot found + call user
+router.post('/:id/simulate-slot', async (req, res) => {
+  const { id } = req.params;
+
+  const [profile, strategy, notify, appointment] = await Promise.all([
+    redis.get(`session:${id}:profile`),
+    redis.get(`session:${id}:strategy`),
+    redis.get(`session:${id}:notify`),
+    redis.get(`session:${id}:appointment`),
+  ]);
+
+  if (!appointment) return res.status(404).json({ error: 'No appointment monitoring active' });
+
+  const updated = {
+    ...appointment,
+    status: 'slot_found',
+    slotsFound: true,
+    slotDetails: 'Available slot: This Tuesday at 2:30 PM — book immediately before it fills!',
+  };
+  await redis.set(`session:${id}:appointment`, updated, 86400);
+
+  let callResult = 'skipped';
+  if (notify?.phoneNumber) {
+    try {
+      await vapi.makeOutboundCall(notify.phoneNumber, {
+        consulate: strategy?.recommended || appointment.consulate,
+        destination: profile?.destination || 'your destination',
+      });
+      callResult = 'initiated';
+    } catch (err) {
+      console.error('[Vapi] Outbound call failed:', err.message);
+      callResult = 'failed';
+    }
+  }
+
+  res.json({ status: 'simulated', slot: updated, call: callResult });
 });
 
 module.exports = router;

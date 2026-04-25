@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Pipeline from '@/components/Pipeline';
-import { getAppointment, getSession } from '@/lib/api';
+import { getAppointment, getSession, notifyMe, simulateSlot } from '@/lib/api';
 
 function AppointmentPage() {
   const router = useRouter();
@@ -13,6 +13,9 @@ function AppointmentPage() {
   const [state, setState] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [tick, setTick] = useState(0);
+  const [phone, setPhone] = useState('');
+  const [notifyStatus, setNotifyStatus] = useState<'idle' | 'saved' | 'calling' | 'error'>('idle');
+  const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -29,6 +32,30 @@ function AppointmentPage() {
     }, 30000);
     return () => clearInterval(interval);
   }, [sessionId]);
+
+  const handleNotify = async () => {
+    if (!phone) return;
+    try {
+      await notifyMe(sessionId, phone);
+      setNotifyStatus('saved');
+    } catch {
+      setNotifyStatus('error');
+    }
+  };
+
+  const handleSimulateSlot = async () => {
+    setSimulating(true);
+    try {
+      await simulateSlot(sessionId);
+      const updated = await getAppointment(sessionId);
+      setState(updated);
+      setNotifyStatus('calling');
+    } catch {
+      /* ignore */
+    } finally {
+      setSimulating(false);
+    }
+  };
 
   const formatTime = (iso: string) => {
     if (!iso) return '—';
@@ -127,6 +154,50 @@ function AppointmentPage() {
             </div>
           </div>
         )}
+
+        {/* Vapi phone notification */}
+        <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 mb-6">
+          <div className="text-xs font-semibold text-white/40 tracking-wider mb-1">VAPI PHONE ALERT</div>
+          <p className="text-xs text-white/30 mb-4">Get a phone call the moment a slot opens — VisaPath's AI voice agent will call you instantly.</p>
+
+          {notifyStatus === 'saved' || notifyStatus === 'calling' ? (
+            <div className="flex items-center gap-2 text-green-400 text-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {notifyStatus === 'calling'
+                ? 'Slot found! Vapi is calling you now…'
+                : `We'll call ${phone} when a slot opens`}
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="tel"
+                placeholder="+1 (415) 555-0100"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-blue-500/40"
+              />
+              <button
+                onClick={handleNotify}
+                disabled={!phone}
+                className="px-4 py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-sm font-semibold rounded-xl hover:bg-blue-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                Notify me
+              </button>
+            </div>
+          )}
+
+          {notifyStatus === 'saved' && (
+            <button
+              onClick={handleSimulateSlot}
+              disabled={simulating}
+              className="mt-4 w-full py-2.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold rounded-xl hover:bg-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              {simulating ? 'Simulating…' : '⚡ Demo: Simulate Slot Found + Trigger Call'}
+            </button>
+          )}
+        </div>
 
         <div className="flex gap-3">
           <button

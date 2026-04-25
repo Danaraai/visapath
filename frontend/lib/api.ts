@@ -1,4 +1,5 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Empty string = relative URLs → works on Vercel (same host) and localhost
+const BASE = '';
 
 export interface IntakeData {
   nationality: string;
@@ -65,5 +66,21 @@ export async function updateChecklistItem(sessionId: string, itemId: string, sta
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
+  return res.json();
+}
+
+export async function notifyMe(sessionId: string, phoneNumber: string) {
+  const res = await fetch(`${BASE}/api/session/${sessionId}/notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phoneNumber }),
+  });
+  if (!res.ok) throw new Error('Failed to save phone number');
+  return res.json();
+}
+
+export async function simulateSlot(sessionId: string) {
+  const res = await fetch(`${BASE}/api/session/${sessionId}/simulate-slot`, { method: 'POST' });
+  if (!res.ok) throw new Error('Simulate failed');
   return res.json();
 }
